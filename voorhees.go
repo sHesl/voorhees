@@ -54,7 +54,7 @@ func (v *Voorhees) Add(path string, val interface{}) map[string]interface{} {
 }
 
 // AddThen performs an add operation, identical to .Add(), but instead of returning the result,
-// it returns the JSON back to allow more manipulations to be performed.
+// it returns the Voorhees instance back to allow more manipulations to be performed.
 func (v *Voorhees) AddThen(path string, val interface{}) *Voorhees {
 	v.JSON = v.Add(path, val)
 
@@ -90,7 +90,7 @@ func (v *Voorhees) Change(path string, val interface{}) map[string]interface{} {
 }
 
 // ChangeThen performs a change operation, identical to .Change(), but instead of returning the result,
-// it returns the JSON back to allow more manipulations to be performed.
+// it returns the Voorhees instance back to allow more manipulations to be performed.
 func (v *Voorhees) ChangeThen(path string, val interface{}) *Voorhees {
 	v.JSON = v.Change(path, val)
 
@@ -118,7 +118,7 @@ func (v *Voorhees) Delete(path string) map[string]interface{} {
 }
 
 // DeleteThen performs a delete operation, identical to .Delete(), but instead of returning the result,
-// it returns the JSON back to allow more manipulations to be performed.
+// it returns the Voorhees instance back to allow more manipulations to be performed.
 func (v *Voorhees) DeleteThen(path string) *Voorhees {
 	v.JSON = v.Delete(path)
 
