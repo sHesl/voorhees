@@ -2,13 +2,12 @@ package voorhees
 
 import (
 	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_Add(t *testing.T) {
+func TestAdd(t *testing.T) {
 	type testCase struct {
 		path     string
 		value    interface{}
@@ -168,33 +167,22 @@ func Test_Add(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		result := NewVoorhees(testCase.input).Add(testCase.path, testCase.value)
+		result, err := NewVoorhees(testCase.input).Add(testCase.path, testCase.value)
+
+		assert.NoError(t, err)
 
 		if !reflect.DeepEqual(result, testCase.expected) {
 			t.Errorf("Expected .Add(%s, %s) to correctly add property '%s' to map with value: %s",
 				testCase.path, testCase.value, finalPropertyOfPath(testCase.path), testCase.value)
 		}
 
-		if reflect.DeepEqual(result, testCase) {
+		if reflect.DeepEqual(result, testCase.input) {
 			t.Errorf("Expected .Add() to not to modify input map")
 		}
 	}
 }
 
-func Test_AddThen(t *testing.T) {
-	input := map[string]interface{}{
-		"keepMe": "please",
-	}
-
-	a := NewVoorhees(input).Add("addMe", "excellent")
-	b := NewVoorhees(input).AddThen("addMe", "excellent").JSON
-
-	if !reflect.DeepEqual(a, b) {
-		t.Errorf("Expected .Add() and .AddThen() to produce the same result with the same input.")
-	}
-}
-
-func Test_Change(t *testing.T) {
+func TestChange(t *testing.T) {
 	type testCase struct {
 		path     string
 		value    interface{}
@@ -315,33 +303,22 @@ func Test_Change(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		result := NewVoorhees(testCase.input).Change(testCase.path, testCase.value)
+		result, err := NewVoorhees(testCase.input).Change(testCase.path, testCase.value)
+
+		assert.NoError(t, err)
 
 		if !reflect.DeepEqual(result, testCase.expected) {
 			t.Errorf("Expected .Change(%s, %s) to correctly change property '%s' to value: %s",
 				testCase.path, testCase.value, finalPropertyOfPath(testCase.path), testCase.value)
 		}
 
-		if reflect.DeepEqual(result, testCase) {
+		if reflect.DeepEqual(result, testCase.input) {
 			t.Errorf("Expected .Change() to not to modify input map")
 		}
 	}
 }
 
-func Test_ChangeThen(t *testing.T) {
-	input := map[string]interface{}{
-		"changeMe": "please",
-	}
-
-	a := NewVoorhees(input).Change("changeMe", "excellent")
-	b := NewVoorhees(input).ChangeThen("changeMe", "excellent").JSON
-
-	if !reflect.DeepEqual(a, b) {
-		t.Errorf("Expected .Change() and .ChangeThen() to produce the same result with the same input.")
-	}
-}
-
-func Test_Delete(t *testing.T) {
+func TestDelete(t *testing.T) {
 	type testCase struct {
 		path     string
 		input    map[string]interface{}
@@ -451,85 +428,51 @@ func Test_Delete(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		result := NewVoorhees(testCase.input).Delete(testCase.path)
+		result, err := NewVoorhees(testCase.input).Delete(testCase.path)
+
+		assert.NoError(t, err)
 
 		if !reflect.DeepEqual(result, testCase.expected) {
 			t.Errorf("Expected .Delete(%s) to correctly delete property '%s'",
 				testCase.path, finalPropertyOfPath(testCase.path))
 		}
 
-		if reflect.DeepEqual(result, testCase) {
+		if reflect.DeepEqual(result, testCase.input) {
 			t.Errorf("Expected .Delete() to not to modify input map")
 		}
 	}
 }
 
-func Test_DeleteThen(t *testing.T) {
-	input := map[string]interface{}{
-		"deleteMe": "please",
-	}
+func TestPropertyInPathIsNotAMap(t *testing.T) {
+	expected := "[Voorhees]: Unable to navigate to integer.uhoh. Node: integer was not a map[string]interface{}"
 
-	a := NewVoorhees(input).Delete("deleteMe")
-	b := NewVoorhees(input).DeleteThen("deleteMe").JSON
-
-	if !reflect.DeepEqual(a, b) {
-		t.Errorf("Expected .Delete() and .DeleteThen() to produce the same result with the same input.")
-	}
-}
-
-func Test_PropertyInPathIsNotAMap(t *testing.T) {
-	expectedPanicMessage := "Voorhees: Add | Unable to navigate to integer.uhoh. Node: integer was not a map[string]interface{}"
-
-	defer func() {
-		if r := recover(); r != nil {
-			s := r.(string)
-			if expectedPanicMessage != s {
-				t.Errorf("Expected any panic occuring inside Add() to produce message %s. Got: %s",
-					expectedPanicMessage, s)
-			}
-		} else {
-			t.Errorf("Test_PropertyInPathIsNotAMap panicked but did could not recover. Test setup is broken!")
-		}
-	}()
-
-	input := map[string]interface{}{
+	testCase := map[string]interface{}{
 		"integer": 123,
 	}
 
-	NewVoorhees(input).Add("integer.uhoh.added", "excellent")
+	result, err := NewVoorhees(testCase).Add("integer.uhoh.added", "excellent")
+
+	assert.Nil(t, result)
+	assert.Error(t, err)
+	assert.Equal(t, expected, err.Error())
 }
 
-func Test_ArrayIsNotPresentInPath(t *testing.T) {
-	expectedPanicMessage := "Voorhees: Change | Unable to navigate to notreal[0].uhoh. Failed to find node: notreal[0]"
+func TestArrayIsNotPresentInPath(t *testing.T) {
+	expected := "[Voorhees]: Unable to navigate to notreal[0].uhoh. Failed to find node: notreal[0]"
 
-	defer func() {
-		if r := recover(); r != nil {
-			s := r.(string)
-			if expectedPanicMessage != s {
-				t.Errorf("Expected any panic occuring inside Change() to produce message %s. Got: %s",
-					expectedPanicMessage, s)
-			}
-		} else {
-			t.Errorf("Test_ArrayIsNotPresentInPath panicked but did could not recover. Test setup is broken!")
-		}
-	}()
-
-	input := map[string]interface{}{
+	testCase := map[string]interface{}{
 		"integer": 123,
 	}
 
-	NewVoorhees(input).Change("notreal[0].uhoh.added", "excellent")
+	result, err := NewVoorhees(testCase).Change("notreal[0].uhoh.added", "excellent")
+
+	assert.Nil(t, result)
+	assert.Error(t, err)
+	assert.Equal(t, expected, err.Error())
 }
 
-func Test_Change_InvalidPath(t *testing.T) {
-	defer func() {
-		if r := recover(); r != nil {
-			s := r.(string)
-			if !strings.HasPrefix(s, "Voorhees: Change |") {
-				t.Errorf("Expected any panic occuring inside Change() to be proper Voorhees formatted panics")
-			}
-		}
-	}()
+func TestChangeInvalidPath(t *testing.T) {
+	expected := "[Voorhees]: Unable to navigate to layer1.uhoh. Failed to find node: uhoh"
 
 	testCase := map[string]interface{}{
 		"layer1": map[string]interface{}{
@@ -539,18 +482,15 @@ func Test_Change_InvalidPath(t *testing.T) {
 		},
 	}
 
-	NewVoorhees(testCase).Change("layer1.uhoh.layer2", "x")
+	result, err := NewVoorhees(testCase).Change("layer1.uhoh.layer2", "x")
+
+	assert.Nil(t, result)
+	assert.Error(t, err)
+	assert.Equal(t, expected, err.Error())
 }
 
-func Test_Change_NonexistantProperty(t *testing.T) {
-	defer func() {
-		if r := recover(); r != nil {
-			s := r.(string)
-			if !strings.HasPrefix(s, "Voorhees: Change |") {
-				t.Errorf("Expected any panic occuring inside Change() to be proper Voorhees formatted panics")
-			}
-		}
-	}()
+func TestChangeNonexistantProperty(t *testing.T) {
+	expected := "[Voorhees]: Unable to change changeMe because it doesn't exist at path layer1.layer2"
 
 	testCase := map[string]interface{}{
 		"layer1": map[string]interface{}{
@@ -560,18 +500,15 @@ func Test_Change_NonexistantProperty(t *testing.T) {
 		},
 	}
 
-	NewVoorhees(testCase).Change("layer1.layer2.changeMe", "x")
+	result, err := NewVoorhees(testCase).Change("layer1.layer2.changeMe", "x")
+
+	assert.Nil(t, result)
+	assert.Error(t, err)
+	assert.Equal(t, expected, err.Error())
 }
 
-func Test_Delete_InvalidPath(t *testing.T) {
-	defer func() {
-		if r := recover(); r != nil {
-			s := r.(string)
-			if !strings.HasPrefix(s, "Voorhees: Delete |") {
-				t.Errorf("Expected any panic occuring inside Delete() to be proper Voorhees formatted panics")
-			}
-		}
-	}()
+func TestDeleteInvalidPath(t *testing.T) {
+	expected := "[Voorhees]: Unable to navigate to layer1.layer2.uhoh. Failed to find node: uhoh"
 
 	testCase := map[string]interface{}{
 		"layer1": map[string]interface{}{
@@ -582,10 +519,14 @@ func Test_Delete_InvalidPath(t *testing.T) {
 		},
 	}
 
-	NewVoorhees(testCase).Delete("layer1.layer2.uhoh.deleteMe")
+	result, err := NewVoorhees(testCase).Delete("layer1.layer2.uhoh.deleteMe")
+
+	assert.Nil(t, result)
+	assert.Error(t, err)
+	assert.Equal(t, expected, err.Error())
 }
 
-func Test_finalPropertyOfPath(t *testing.T) {
+func TestFinalPropertyOfPath(t *testing.T) {
 	type testCase struct {
 		input    string
 		expected string
@@ -601,14 +542,13 @@ func Test_finalPropertyOfPath(t *testing.T) {
 	for _, testCase := range testCases {
 		result := finalPropertyOfPath(testCase.input)
 
-		if result != testCase.expected {
-			t.Errorf("Expected finalPropertyOfPath(\"%s\") to return \"%s\". Got: %s",
-				testCase.input, testCase.expected, result)
-		}
+		assert.Equal(t, testCase.expected, result,
+			"Expected finalPropertyOfPath(\"%s\") to return \"%s\". Got: %s",
+			testCase.input, testCase.expected, result)
 	}
 }
 
-func Test_trimLastPropertyFromPath(t *testing.T) {
+func TestTrimLastPropertyFromPath(t *testing.T) {
 	type testCase struct {
 		input    string
 		expected string
@@ -624,14 +564,13 @@ func Test_trimLastPropertyFromPath(t *testing.T) {
 	for _, testCase := range testCases {
 		result := trimLastPropertyFromPath(testCase.input)
 
-		if result != testCase.expected {
-			t.Errorf("Expected trimLastPropertyFromPath(\"%s\") to return \"%s\". Got: %s",
-				testCase.input, testCase.expected, result)
-		}
+		assert.Equal(t, testCase.expected, result,
+			"Expected trimLastPropertyFromPath(\"%s\") to return \"%s\". Got: %s",
+			testCase.input, testCase.expected, result)
 	}
 }
 
-func Test_deconstructArrayPath(t *testing.T) {
+func TestDeconstructArrayPath(t *testing.T) {
 	type testCase struct {
 		s             string
 		expectedName  string
@@ -645,7 +584,9 @@ func Test_deconstructArrayPath(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		name, index := deconstructArrayPath(testCase.s)
+		name, index, err := deconstructArrayPath(testCase.s)
+
+		assert.NoError(t, err)
 
 		if name != testCase.expectedName {
 			t.Errorf("Expected deconstructArrayPath(\"%s\") to return name \"%s\". Got: %s",
@@ -659,11 +600,11 @@ func Test_deconstructArrayPath(t *testing.T) {
 	}
 }
 
-func Test_deconstructArrayPath_panic(t *testing.T) {
+func TestDeconstructArrayPathPanic(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
 			s := r.(interface{})
-			assert.Equal(t, "Voorhees: Array Path | array[not good] is not a valid array denotion", s)
+			assert.Equal(t, "[Voorhees]: Array Path | array[not good] is not a valid array denotion", s)
 		}
 	}()
 
